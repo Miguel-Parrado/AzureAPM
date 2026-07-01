@@ -42,32 +42,38 @@ const ORDENES = [
 function GaugeOEE({ valor }) {
   const cx = 100, cy = 95, r = 65;
   const pct = Math.min(Math.max(valor, 0), 100) / 100;
-  const anguloInicio = Math.PI;
-  const anguloFin = 0;
-  const anguloValor = Math.PI - pct * Math.PI;
 
-  const toX = (a) => +(cx + r * Math.cos(a)).toFixed(2);
-  const toY = (a) => +(cy - r * Math.sin(a)).toFixed(2);
+  // Punto inicial (izquierda, 180°)
+  const sx = cx - r;
+  const sy = cy;
 
-  const fondoD = `M ${toX(anguloInicio)} ${toY(anguloInicio)} A ${r} ${r} 0 0 1 ${toX(anguloFin)} ${toY(anguloFin)}`;
-  const valorD = pct > 0
-    ? `M ${toX(anguloInicio)} ${toY(anguloInicio)} A ${r} ${r} 0 ${pct > 0.5 ? 1 : 0} 1 ${toX(anguloValor)} ${toY(anguloValor)}`
-    : null;
+  // Punto final del arco de valor
+  const angle = Math.PI * (1 - pct); // va de π→0 cuando pct va 0→1
+  const ex = +(cx + r * Math.cos(angle)).toFixed(2);
+  const ey = +(cy - r * Math.sin(angle)).toFixed(2);
 
   const color = valor >= 70 ? "#10b981" : valor >= 50 ? "#f59e0b" : "#ef4444";
 
   return (
     <svg viewBox="0 0 200 120" style={{ width: "100%" }}>
-      <path d={fondoD} fill="none" stroke="#1e293b" strokeWidth="14" strokeLinecap="round" />
-      {valorD && (
-        <path d={valorD} fill="none" stroke={color} strokeWidth="14" strokeLinecap="round" />
+      {/* Fondo: semicírculo completo, sweep=1, large-arc=0 */}
+      <path
+        d={`M ${sx} ${sy} A ${r} ${r} 0 0 1 ${cx + r} ${sy}`}
+        fill="none" stroke="#1e293b" strokeWidth="14" strokeLinecap="round"
+      />
+      {/* Valor: mismo sweep=1 y large-arc=0 siempre (≤180°) */}
+      {pct > 0 && (
+        <path
+          d={`M ${sx} ${sy} A ${r} ${r} 0 0 1 ${ex} ${ey}`}
+          fill="none" stroke={color} strokeWidth="14" strokeLinecap="round"
+        />
       )}
-      <text x={cx} y={cy - 6} textAnchor="middle" fill={color}
+      <text x={cx} y={cy - 8} textAnchor="middle" fill={color}
         fontSize="28" fontWeight="700" fontFamily="monospace">{valor}%</text>
-      <text x={cx} y={cy + 14} textAnchor="middle" fill="#64748b"
+      <text x={cx} y={cy + 12} textAnchor="middle" fill="#64748b"
         fontSize="11" fontFamily="system-ui">OEE</text>
-      <text x={cx - r + 2} y={cy + 16} textAnchor="middle" fill="#334155" fontSize="9">0</text>
-      <text x={cx + r - 2} y={cy + 16} textAnchor="middle" fill="#334155" fontSize="9">100</text>
+      <text x={sx + 4} y={cy + 16} textAnchor="middle" fill="#334155" fontSize="9">0</text>
+      <text x={cx + r - 4} y={cy + 16} textAnchor="middle" fill="#334155" fontSize="9">100</text>
     </svg>
   );
 }
