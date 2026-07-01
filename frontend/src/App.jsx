@@ -40,7 +40,7 @@ const ORDENES = [
 
 // ── Gauge OEE (semicírculo SVG) ────────────────────────────────────────────
 function GaugeOEE({ valor }) {
-  const cx = 100, cy = 90, r = 65;
+  const cx = 100, cy = 95, r = 65;
   const pct = Math.min(Math.max(valor, 0), 100) / 100;
   const anguloInicio = Math.PI;
   const anguloFin = 0;
@@ -57,7 +57,7 @@ function GaugeOEE({ valor }) {
   const color = valor >= 70 ? "#10b981" : valor >= 50 ? "#f59e0b" : "#ef4444";
 
   return (
-    <svg viewBox="0 0 200 110" style={{ width: "100%" }}>
+    <svg viewBox="0 0 200 120" style={{ width: "100%" }}>
       <path d={fondoD} fill="none" stroke="#1e293b" strokeWidth="14" strokeLinecap="round" />
       {valorD && (
         <path d={valorD} fill="none" stroke={color} strokeWidth="14" strokeLinecap="round" />
