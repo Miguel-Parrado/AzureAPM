@@ -6,6 +6,7 @@ import {
 
 // ── Configuración ──────────────────────────────────────────────────────────
 const API_BASE = "https://jdm-mes.azurewebsites.net/api";
+const API_ROOT  = "https://jdm-mes.azurewebsites.net";
 
 // ── Paleta de colores ──────────────────────────────────────────────────────
 const C = {
@@ -199,7 +200,7 @@ export default function MESDashboard() {
         const [resMaquinas, resOrdenes, resHealth] = await Promise.all([
           fetch(`${API_BASE}/maquinas`),
           fetch(`${API_BASE}/ordenes`),
-          fetch(`${API_BASE}/health`),
+          fetch(`${API_ROOT}/health`),
         ]);
         if (resMaquinas.ok) {
           const data = await resMaquinas.json();
