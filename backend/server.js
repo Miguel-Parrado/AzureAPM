@@ -18,6 +18,8 @@ app.use(cors({
   allowedHeaders: ["Content-Type", "Authorization"],
 }));
 
+app.use(express.json());
+
 // ── Configuración Azure SQL ───────────────────────────────────────────────────
 const dbConfig = {
   server:   process.env.AZURE_SQL_SERVER,   // e.g. "tu-servidor.database.windows.net"
