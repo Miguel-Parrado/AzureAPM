@@ -36,12 +36,12 @@ function generarTendencia() {
 
 // ── Máquinas ───────────────────────────────────────────────────────────────
 const MAQUINAS = [
-  { id: "M-01", nombre: "Sopladora",             estado: "corriendo",   eficiencia: 94, piezas: 8400,  meta: 9000  },
-  { id: "M-02", nombre: "Enjuagadora",            estado: "corriendo",   eficiencia: 91, piezas: 8200,  meta: 9000  },
-  { id: "M-03", nombre: "Llenadora",              estado: "falla",       eficiencia:  0, piezas: 5100,  meta: 9000  },
-  { id: "M-04", nombre: "Tapadora",               estado: "corriendo",   eficiencia: 87, piezas: 7800,  meta: 9000  },
-  { id: "M-05", nombre: "Etiquetadora",           estado: "en_espera",   eficiencia:  0, piezas: 7600,  meta: 9000  },
-  { id: "M-06", nombre: "Empacadora (Embalaje)",  estado: "corriendo",   eficiencia: 89, piezas: 1240,  meta: 1500  },
+  { id: "M-01", nombre: "Llenadora",           estado: "falla",      eficiencia:  0, piezas: 5100, meta: 9000 },
+  { id: "M-02", nombre: "Tapadora",             estado: "corriendo",  eficiencia: 87, piezas: 7800, meta: 9000 },
+  { id: "M-03", nombre: "Etiquetadora",         estado: "en_espera",  eficiencia:  0, piezas: 7600, meta: 9000 },
+  { id: "M-04", nombre: "Codificadora",         estado: "corriendo",  eficiencia: 93, piezas: 7500, meta: 9000 },
+  { id: "M-05", nombre: "Empacadora (Embalaje)",estado: "corriendo",  eficiencia: 89, piezas: 1240, meta: 1500 },
+  { id: "M-06", nombre: "Shrink (Paletizado)",  estado: "corriendo",  eficiencia: 91, piezas: 1180, meta: 1500 },
 ];
 
 // ── Órdenes ────────────────────────────────────────────────────────────────
