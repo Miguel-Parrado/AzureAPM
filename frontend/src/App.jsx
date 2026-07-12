@@ -22,6 +22,24 @@ const C = {
   textSub:   "#9ab0c4",
 };
 
+// ── OEE Visual
+──────────────────────────────────────────────────────
+const [resMaquinas, resOrdenes, resHealth, resOEE] = await Promise.all([
+  fetch(`${API_BASE}/maquinas`),
+  fetch(`${API_BASE}/ordenes`),
+  fetch(`${API_ROOT}/health`),
+  fetch(`${API_BASE}/oee`), 
+
+if (resOEE.ok) {
+  const data = await resOEE.json();
+  setOee({
+    disponibilidad: data.disponibilidad ?? 0,
+    rendimiento:    data.rendimiento    ?? 0,
+    calidad:        data.calidad        ?? 0,
+    oee:            data.oee            ?? 0,
+  });
+}
+
 // ── Datos de tendencia ─────────────────────────────────────────────────────
 function generarTendencia() {
   const ahora = new Date();
@@ -189,7 +207,7 @@ export default function MESDashboard() {
   const [hora, setHora]           = useState(new Date());
   const [maquinas, setMaquinas]   = useState([]);
   const [ordenes, setOrdenes]     = useState([]);
-  const [oee]                     = useState({ disponibilidad: 92, rendimiento: 88, calidad: 99.1, oee: 82 });
+  const [oee, setOee] 		  = useState({ disponibilidad: 0, rendimiento: 0, calidad: 0, oee: 0 });
   const [alertas, setAlertas]     = useState(0);
   const [dbStatus, setDbStatus]   = useState("verificando");
   const [cargando, setCargando]   = useState(true);

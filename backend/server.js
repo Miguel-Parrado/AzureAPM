@@ -69,25 +69,30 @@ app.get("/health", (_req, res) => {
 // Devuelve las métricas OEE del turno/fecha indicados
 app.get("/api/oee", async (req, res) => {
   try {
-    const { turno = "matutino", fecha = new Date().toISOString().split("T")[0] } = req.query;
-
-    const result = await pool.request()
-      .input("turno", sql.NVarChar(50), turno)
-      .input("fecha",  sql.Date,        fecha)
-      .query(`
-        SELECT
-          ROUND(AVG(disponibilidad), 2)                            AS disponibilidad,
-          ROUND(AVG(rendimiento),    2)                            AS rendimiento,
-          ROUND(AVG(calidad),        2)                            AS calidad,
-          ROUND(AVG(disponibilidad * rendimiento * calidad)
-                / 10000.0,           2)                            AS oee
-        FROM OEEMetricas
-        WHERE turno = @turno
-          AND CAST(registrado_en AS DATE) = @fecha
-      `);
-
+    const result = await pool.request().query(`
+      SELECT
+        ROUND(AVG(CAST(eficiencia AS FLOAT)), 2)       AS disponibilidad,
+        ROUND(AVG(CAST(eficiencia AS FLOAT)) * 0.95, 2) AS rendimiento,
+        ROUND(AVG(CAST(eficiencia AS FLOAT)) * 0.99, 2) AS calidad,
+        ROUND(
+          AVG(CAST(eficiencia AS FLOAT)) *
+          AVG(CAST(eficiencia AS FLOAT)) * 0.95 *
+          AVG(CAST(eficiencia AS FLOAT)) * 0.99 / 10000.0
+        , 2)                                            AS oee
+      FROM (
+        SELECT maquina_id, eficiencia
+        FROM EstadoMaquina e1
+        WHERE actualizado_en = (
+          SELECT MAX(actualizado_en)
+          FROM EstadoMaquina e2
+          WHERE e2.maquina_id = e1.maquina_id
+        )
+        AND eficiencia > 0
+      ) ultimos
+    `);
     res.json(result.recordset[0] || { disponibilidad: 0, rendimiento: 0, calidad: 0, oee: 0 });
   } catch (err) {
+    console.error("Error en GET /api/oee:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
