@@ -154,7 +154,7 @@ app.get("/api/ordenes", async (_req, res) => {
         maquina_id,
         creado_en
       FROM OrdenesProduccion
-      WHERE estado IN ('pendiente', 'en_proceso', 'retrasada', 'en_riesgo')
+      WHERE estado IN ('pendiente', 'en_proceso', 'retrasada', 'en_riesgo', 'completa')
       ORDER BY hora_entrega ASC
     `);
     res.json(result.recordset);
