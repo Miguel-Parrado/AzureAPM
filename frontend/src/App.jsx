@@ -22,24 +22,6 @@ const C = {
   textSub:   "#9ab0c4",
 };
 
-// ── OEE Visual ──────────────────────────────────────────────────────
-
-const [resMaquinas, resOrdenes, resHealth, resOEE] = await Promise.all([
-  fetch(`${API_BASE}/maquinas`),
-  fetch(`${API_BASE}/ordenes`),
-  fetch(`${API_ROOT}/health`),
-  fetch(`${API_BASE}/oee`), 
-
-if (resOEE.ok) {
-  const data = await resOEE.json();
-  setOee({
-    disponibilidad: data.disponibilidad ?? 0,
-    rendimiento:    data.rendimiento    ?? 0,
-    calidad:        data.calidad        ?? 0,
-    oee:            data.oee            ?? 0,
-  });
-}
-
 // ── Datos de tendencia ─────────────────────────────────────────────────────
 function generarTendencia() {
   const ahora = new Date();
@@ -213,33 +195,43 @@ export default function MESDashboard() {
   const [cargando, setCargando]   = useState(true);
 
   useEffect(() => {
-    const fetchDatos = async () => {
-      try {
-        const [resMaquinas, resOrdenes, resHealth] = await Promise.all([
-          fetch(`${API_BASE}/maquinas`),
-          fetch(`${API_BASE}/ordenes`),
-          fetch(`${API_ROOT}/health`),
-        ]);
-        if (resMaquinas.ok) {
-          const data = await resMaquinas.json();
-          setMaquinas(data);
-          setAlertas(data.filter(m => m.estado === "falla").length);
-        }
-        if (resOrdenes.ok) setOrdenes(await resOrdenes.json());
-        if (resHealth.ok) {
-          const h = await resHealth.json();
-          setDbStatus(h.database === "conectado" ? "conectado" : "error");
-        }
-      } catch {
-        setDbStatus("error");
-      } finally {
-        setCargando(false);
+  const fetchDatos = async () => {
+    try {
+      const [resMaquinas, resOrdenes, resHealth, resOEE] = await Promise.all([
+        fetch(`${API_BASE}/maquinas`),
+        fetch(`${API_BASE}/ordenes`),
+        fetch(`${API_ROOT}/health`),
+        fetch(`${API_BASE}/oee`),
+      ]);
+      if (resMaquinas.ok) {
+        const data = await resMaquinas.json();
+        setMaquinas(data);
+        setAlertas(data.filter(m => m.estado === "falla").length);
       }
-    };
-    fetchDatos();
-    const intervaloAPI = setInterval(fetchDatos, 30000);
-    return () => clearInterval(intervaloAPI);
-  }, []);
+      if (resOrdenes.ok) setOrdenes(await resOrdenes.json());
+      if (resHealth.ok) {
+        const h = await resHealth.json();
+        setDbStatus(h.database === "conectado" ? "conectado" : "error");
+      }
+      if (resOEE.ok) {
+        const data = await resOEE.json();
+        setOee({
+          disponibilidad: data.disponibilidad ?? 0,
+          rendimiento:    data.rendimiento    ?? 0,
+          calidad:        data.calidad        ?? 0,
+          oee:            data.oee            ?? 0,
+        });
+      }
+    } catch {
+      setDbStatus("error");
+    } finally {
+      setCargando(false);
+    }
+  };
+  fetchDatos();
+  const intervaloAPI = setInterval(fetchDatos, 30000);
+  return () => clearInterval(intervaloAPI);
+}, []);
 
   useEffect(() => {
     const id = setInterval(() => {
