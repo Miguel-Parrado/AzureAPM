@@ -125,11 +125,11 @@ app.post("/api/maquinas/:id/estado", async (req, res) => {
   try {
     const { estado, eficiencia, piezas_producidas, piezas_meta } = req.body;
     await pool.request()
-      .input("maquina_id",       sql.NVarChar(20), req.params.id)
-      .input("estado",           sql.NVarChar(30), estado)
-      .input("eficiencia",       sql.Decimal(5, 2), eficiencia)
-      .input("piezas_producidas",sql.Int,           piezas_producidas)
-      .input("piezas_meta",      sql.Int,           piezas_meta)
+      .input("maquina_id",        sql.NVarChar(20), req.params.id)
+      .input("estado",            sql.NVarChar(30), estado)
+      .input("eficiencia",        sql.Decimal(5, 2), eficiencia)
+      .input("piezas_producidas", sql.Int,           piezas_producidas)
+      .input("piezas_meta",       sql.Int,           piezas_meta)
       .query(`
         INSERT INTO EstadoMaquina
           (maquina_id, estado, eficiencia, piezas_producidas, piezas_meta, actualizado_en)
@@ -138,6 +138,7 @@ app.post("/api/maquinas/:id/estado", async (req, res) => {
       `);
     res.json({ ok: true });
   } catch (err) {
+    console.error("Error en POST /maquinas/:id/estado:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
