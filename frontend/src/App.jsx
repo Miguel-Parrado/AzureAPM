@@ -1,12 +1,8 @@
 import { useState, useEffect } from "react";
-import {
-  AreaChart, Area, XAxis, YAxis,
-  CartesianGrid, Tooltip, ResponsiveContainer
-} from "recharts";
 
 // ── Configuración ──────────────────────────────────────────────────────────
 const API_BASE = "https://jdm-mes.azurewebsites.net/api";
-const API_ROOT  = "https://jdm-mes.azurewebsites.net";
+const API_ROOT = "https://jdm-mes.azurewebsites.net";
 
 // ── Paleta de colores ──────────────────────────────────────────────────────
 const C = {
@@ -21,19 +17,6 @@ const C = {
   textMuted: "#6a8faa",
   textSub:   "#9ab0c4",
 };
-
-// ── Datos de tendencia ─────────────────────────────────────────────────────
-function generarTendencia() {
-  const ahora = new Date();
-  return Array.from({ length: 20 }, (_, i) => {
-    const t = new Date(ahora - (19 - i) * 3 * 60000);
-    return {
-      time: `${String(t.getHours()).padStart(2, "0")}:${String(t.getMinutes()).padStart(2, "0")}`,
-      real: Math.round(88 + (Math.random() - 0.5) * 24),
-      plan: 90,
-    };
-  });
-}
 
 // ── Gauge OEE ──────────────────────────────────────────────────────────────
 function GaugeOEE({ valor }) {
@@ -65,8 +48,7 @@ function GaugeOEE({ valor }) {
 }
 
 // ── Tarjeta KPI ────────────────────────────────────────────────────────────
-function TarjetaKPI({ etiqueta, valor, unidad = "%", tendencia }) {
-  const positivo = tendencia > 0;
+function TarjetaKPI({ etiqueta, valor, unidad = "%" }) {
   return (
     <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16, display: "flex", flexDirection: "column", gap: 6 }}>
       <span style={{ fontSize: 11, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.06em" }}>{etiqueta}</span>
@@ -74,11 +56,6 @@ function TarjetaKPI({ etiqueta, valor, unidad = "%", tendencia }) {
         <span style={{ fontSize: 30, fontFamily: "monospace", fontWeight: 700, color: C.gris }}>{valor}</span>
         <span style={{ fontSize: 13, color: C.textMuted, marginBottom: 3 }}>{unidad}</span>
       </div>
-      {tendencia !== undefined && (
-        <span style={{ fontSize: 11, color: positivo ? C.rojo : "#f87171" }}>
-          {positivo ? "▲" : "▼"} {Math.abs(tendencia).toFixed(1)}% vs turno anterior
-        </span>
-      )}
     </div>
   );
 }
@@ -164,87 +141,64 @@ function TarjetaOrden({ orden: o }) {
   );
 }
 
-// ── Tooltip del gráfico ────────────────────────────────────────────────────
-function TooltipGrafico({ active, payload, label }) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div style={{ background: C.bgCard2, border: `1px solid ${C.border}`, borderRadius: 8, padding: "8px 12px", fontSize: 12 }}>
-      <div style={{ color: C.textSub, marginBottom: 4 }}>{label}</div>
-      <div style={{ color: C.rojo }}>Real: <strong style={{ color: C.gris }}>{payload[0]?.value}</strong></div>
-      <div style={{ color: C.textMuted }}>Plan: <strong style={{ color: C.gris }}>90</strong></div>
-    </div>
-  );
-}
-
 // ── Esqueleto de carga ─────────────────────────────────────────────────────
 function Skeleton({ height = 60 }) {
-  return (
-    <div style={{ height, borderRadius: 12, background: C.bgCard2 }} />
-  );
+  return <div style={{ height, borderRadius: 12, background: C.bgCard2 }} />;
 }
 
 // ── Dashboard Principal ────────────────────────────────────────────────────
 export default function MESDashboard() {
-  const [tendencia, setTendencia] = useState(generarTendencia);
-  const [hora, setHora]           = useState(new Date());
-  const [maquinas, setMaquinas]   = useState([]);
-  const [ordenes, setOrdenes]     = useState([]);
-  const [oee, setOee] 		  = useState({ disponibilidad: 0, rendimiento: 0, calidad: 0, oee: 0 });
-  const [alertas, setAlertas]     = useState(0);
-  const [dbStatus, setDbStatus]   = useState("verificando");
-  const [cargando, setCargando]   = useState(true);
+  const [hora, setHora]         = useState(new Date());
+  const [maquinas, setMaquinas] = useState([]);
+  const [ordenes, setOrdenes]   = useState([]);
+  const [oee, setOee]           = useState({ disponibilidad: 0, rendimiento: 0, calidad: 0, oee: 0 });
+  const [alertas, setAlertas]   = useState(0);
+  const [dbStatus, setDbStatus] = useState("verificando");
+  const [cargando, setCargando] = useState(true);
 
+  // ── Fetch inicial y polling cada 30 s ──────────────────────────────────
   useEffect(() => {
-  const fetchDatos = async () => {
-    try {
-      const [resMaquinas, resOrdenes, resHealth, resOEE] = await Promise.all([
-        fetch(`${API_BASE}/maquinas`),
-        fetch(`${API_BASE}/ordenes`),
-        fetch(`${API_ROOT}/health`),
-        fetch(`${API_BASE}/oee`),
-      ]);
-      if (resMaquinas.ok) {
-        const data = await resMaquinas.json();
-        setMaquinas(data);
-        setAlertas(data.filter(m => m.estado === "falla").length);
+    const fetchDatos = async () => {
+      try {
+        const [resMaquinas, resOrdenes, resHealth, resOEE] = await Promise.all([
+          fetch(`${API_BASE}/maquinas`),
+          fetch(`${API_BASE}/ordenes`),
+          fetch(`${API_ROOT}/health`),
+          fetch(`${API_BASE}/oee`),
+        ]);
+        if (resMaquinas.ok) {
+          const data = await resMaquinas.json();
+          setMaquinas(data);
+          setAlertas(data.filter(m => m.estado === "falla").length);
+        }
+        if (resOrdenes.ok) setOrdenes(await resOrdenes.json());
+        if (resHealth.ok) {
+          const h = await resHealth.json();
+          setDbStatus(h.database === "conectado" ? "conectado" : "error");
+        }
+        if (resOEE.ok) {
+          const data = await resOEE.json();
+          setOee({
+            disponibilidad: data.disponibilidad ?? 0,
+            rendimiento:    data.rendimiento    ?? 0,
+            calidad:        data.calidad        ?? 0,
+            oee:            data.oee            ?? 0,
+          });
+        }
+      } catch {
+        setDbStatus("error");
+      } finally {
+        setCargando(false);
       }
-      if (resOrdenes.ok) setOrdenes(await resOrdenes.json());
-      if (resHealth.ok) {
-        const h = await resHealth.json();
-        setDbStatus(h.database === "conectado" ? "conectado" : "error");
-      }
-      if (resOEE.ok) {
-        const data = await resOEE.json();
-        setOee({
-          disponibilidad: data.disponibilidad ?? 0,
-          rendimiento:    data.rendimiento    ?? 0,
-          calidad:        data.calidad        ?? 0,
-          oee:            data.oee            ?? 0,
-        });
-      }
-    } catch {
-      setDbStatus("error");
-    } finally {
-      setCargando(false);
-    }
-  };
-  fetchDatos();
-  const intervaloAPI = setInterval(fetchDatos, 30000);
-  return () => clearInterval(intervaloAPI);
-}, []);
+    };
+    fetchDatos();
+    const intervaloAPI = setInterval(fetchDatos, 30000);
+    return () => clearInterval(intervaloAPI);
+  }, []);
 
+  // ── Reloj ──────────────────────────────────────────────────────────────
   useEffect(() => {
-    const id = setInterval(() => {
-      setHora(new Date());
-      setTendencia(prev => {
-        const ahora = new Date();
-        return [...prev.slice(1), {
-          time: `${String(ahora.getHours()).padStart(2,"0")}:${String(ahora.getMinutes()).padStart(2,"0")}`,
-          real: Math.round(88 + (Math.random() - 0.5) * 26),
-          plan: 90,
-        }];
-      });
-    }, 5000);
+    const id = setInterval(() => setHora(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
 
@@ -296,11 +250,10 @@ export default function MESDashboard() {
           display: "flex", flexDirection: "column", alignItems: "center" }}>
           <span style={{ fontSize: 11, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>OEE Global</span>
           <GaugeOEE valor={oee.oee} />
-          <span style={{ fontSize: 11, color: C.textMuted, marginTop: 4 }}>Meta: 85%</span>
         </div>
-        <TarjetaKPI etiqueta="Disponibilidad" valor={oee.disponibilidad} tendencia={1.2}  />
-        <TarjetaKPI etiqueta="Rendimiento"    valor={oee.rendimiento}    tendencia={-0.5} />
-        <TarjetaKPI etiqueta="Calidad"        valor={oee.calidad}        tendencia={0.3}  />
+        <TarjetaKPI etiqueta="Disponibilidad" valor={oee.disponibilidad} />
+        <TarjetaKPI etiqueta="Rendimiento"    valor={oee.rendimiento}    />
+        <TarjetaKPI etiqueta="Calidad"        valor={oee.calidad}        />
       </div>
 
       {/* ── Máquinas ── */}
@@ -315,49 +268,20 @@ export default function MESDashboard() {
         </div>
       </div>
 
-      {/* ── Gráfico + Órdenes ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 14 }}>
-        <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <h2 style={{ fontSize: 13, fontWeight: 600, color: C.gris, margin: 0 }}>Producción en Tiempo Real</h2>
-            <span style={{ fontSize: 10, fontFamily: "monospace", color: C.textMuted }}>botellas/hora · actualiza cada 5 s</span>
-          </div>
-          <ResponsiveContainer width="100%" height={190}>
-            <AreaChart data={tendencia} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
-              <defs>
-                <linearGradient id="gradRojo" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor={C.rojo} stopOpacity={0.35} />
-                  <stop offset="95%" stopColor={C.rojo} stopOpacity={0}    />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
-              <XAxis dataKey="time" stroke={C.border} tick={{ fontSize: 10, fill: C.textMuted }} interval={4} />
-              <YAxis stroke={C.border} tick={{ fontSize: 10, fill: C.textMuted }} domain={[55, 125]} />
-              <Tooltip content={TooltipGrafico} />
-              <Area type="monotone" dataKey="real" stroke={C.rojo} strokeWidth={2} fill="url(#gradRojo)" dot={false} />
-              <Area type="monotone" dataKey="plan" stroke={C.azul} strokeWidth={1.5} strokeDasharray="5 5" fill="none" dot={false} />
-            </AreaChart>
-          </ResponsiveContainer>
-          <div style={{ display: "flex", gap: 16, marginTop: 10, fontSize: 11, color: C.textMuted }}>
-            <span><span style={{ color: C.rojo }}>━</span> Real</span>
-            <span><span style={{ color: C.azul }}>- -</span> Plan</span>
-          </div>
-        </div>
-
-        <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
-          <h2 style={{ fontSize: 13, fontWeight: 600, color: C.gris, margin: "0 0 12px" }}>Órdenes Activas</h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {cargando
-              ? Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} height={80} />)
-              : ordenes.map(o => <TarjetaOrden key={o.orden_id} orden={o} />)
-            }
-          </div>
+      {/* ── Órdenes ── */}
+      <div style={{ background: C.bgCard, border: `1px solid ${C.border}`, borderRadius: 12, padding: 16 }}>
+        <h2 style={{ fontSize: 13, fontWeight: 600, color: C.gris, margin: "0 0 12px" }}>Órdenes Activas</h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+          {cargando
+            ? Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} height={80} />)
+            : ordenes.map(o => <TarjetaOrden key={o.orden_id} orden={o} />)
+          }
         </div>
       </div>
 
       {/* ── Footer ── */}
       <footer style={{ marginTop: 16, textAlign: "center", fontFamily: "monospace", fontSize: 10, color: C.border2 }}>
-        API: {API_BASE} · Actualiza cada 30 s · v1.1.0
+        API: {API_BASE} · Actualiza cada 30 s · v1.2.0
       </footer>
     </div>
   );
