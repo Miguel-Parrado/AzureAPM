@@ -70,25 +70,13 @@ app.get("/health", (_req, res) => {
 app.get("/api/oee", async (req, res) => {
   try {
     const result = await pool.request().query(`
-      SELECT
-        ROUND(AVG(CAST(eficiencia AS FLOAT)), 2)       AS disponibilidad,
-        ROUND(AVG(CAST(eficiencia AS FLOAT)) * 0.95, 2) AS rendimiento,
-        ROUND(AVG(CAST(eficiencia AS FLOAT)) * 0.99, 2) AS calidad,
-        ROUND(
-          AVG(CAST(eficiencia AS FLOAT)) *
-          AVG(CAST(eficiencia AS FLOAT)) * 0.95 *
-          AVG(CAST(eficiencia AS FLOAT)) * 0.99 / 10000.0
-        , 2)                                            AS oee
-      FROM (
-        SELECT maquina_id, eficiencia
-        FROM EstadoMaquina e1
-        WHERE actualizado_en = (
-          SELECT MAX(actualizado_en)
-          FROM EstadoMaquina e2
-          WHERE e2.maquina_id = e1.maquina_id
-        )
-        AND eficiencia > 0
-      ) ultimos
+      SELECT TOP 1
+        disponibilidad,
+        rendimiento,
+        calidad,
+        ROUND((disponibilidad * rendimiento * calidad) / 10000.0, 2) AS oee
+      FROM OEEMetricas
+      ORDER BY registrado_en DESC
     `);
     res.json(result.recordset[0] || { disponibilidad: 0, rendimiento: 0, calidad: 0, oee: 0 });
   } catch (err) {
@@ -96,7 +84,6 @@ app.get("/api/oee", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
 // ── GET /api/maquinas ─────────────────────────────────────────────────────────
 // Devuelve el estado actual de todas las máquinas
 app.get("/api/maquinas", async (_req, res) => {
